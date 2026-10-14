@@ -16,6 +16,10 @@ function prepareKit(gltf, authored = false) {
   gltf.scene.traverse(o => {
     if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; o.frustumCulled = false;
       o.userData.preserveMaterials = authored;
+      o.userData.fineDetail = authored && /Hair_Strands|Bun_Fibers|Eyebrows|Eye_/.test(o.name);
+      o.castShadow = !o.userData.fineDetail;
+      const materials = Array.isArray(o.material) ? o.material : [o.material];
+      if (authored) materials.forEach(m => { m.shadowSide = THREE.FrontSide; });
     }
   });
   return { scene: gltf.scene, clips, authored };
@@ -25,10 +29,15 @@ export function loadKit() {
     new GLTFLoader().loadAsync("./models/xbot.glb"),
     new GLTFLoader().loadAsync("./models/tomas-voss.glb").catch(error => {
       console.warn("Tomas model could not load; using the base avatar", error); return null;
+    }),
+    new GLTFLoader().loadAsync("./models/leonie-vesper.glb").catch(error => {
+      console.warn("Leonie model could not load; using the base avatar", error); return null;
     })
-  ]).then(([base, blue]) => {
+  ]).then(([base, blue, violet]) => {
     const kit = prepareKit(base);
-    kit.variants = blue ? { blue: prepareKit(blue, true) } : {};
+    kit.variants = {};
+    if (blue) kit.variants.blue = prepareKit(blue, true);
+    if (violet) kit.variants.violet = prepareKit(violet, true);
     return kit;
   });
   return kitPromise;
@@ -58,7 +67,7 @@ function dress(model, color, ghost = false) {
     const previous = Array.isArray(o.material) ? o.material : [o.material];
     o.material = o.userData.materialArray ? materials : materials[0];
     previous.forEach(m => m.dispose());
-    o.castShadow = !ghost; o.userData.noFow = ghost;
+    o.castShadow = !ghost && !o.userData.fineDetail; o.userData.noFow = ghost;
   });
   return mats;
 }

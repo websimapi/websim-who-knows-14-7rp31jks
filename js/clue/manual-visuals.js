@@ -221,14 +221,16 @@ function roomImage(id) {
 async function guestImage(id, ghost) {
   const suspect = SUSPECT_BY_ID[id];
   const kit = await loadKit();
+  // Authored guests must show their actual replacement model, never a fallback robot.
+  if (["blue", "violet"].includes(id) && !kit.variants?.[id]) throw new Error("Character model unavailable: " + id);
   const scene = studioScene();
   const avatar = new Avatar(kit, suspect);
   avatar.update(0.15, { x: 0, z: 0, yaw: 0, mv: 0, alive: !ghost, anim: null, seat: null }, true);
   scene.add(avatar.root);
-  const camera = new THREE.PerspectiveCamera(30, 180 / 240, 0.1, 30);
+  const camera = new THREE.PerspectiveCamera(30, 320 / 440, 0.1, 30);
   camera.position.set(0, 1.12, 4.1);
   camera.lookAt(0, 0.95, 0);
-  return snapshot(scene, camera, 180, 240);
+  return snapshot(scene, camera, 320, 440);
 }
 
 export async function manualImage(key) {
